@@ -1,44 +1,87 @@
 import sys
 import re
-from urllib.request import urlopen, Request
 from bs4 import BeautifulSoup
+import requests
 
-srch = ''
+global data
+data = {}
+
+
+def read_page(soup_one_page):
+    for link in soup_one_page.find_all('td'):
+        key = link.get('data-th')
+        if key in data:
+            if 'Daty' in key:
+                end_date = link.text.partition('\n\n')[2]
+                data[key].append(end_date.partition(' ')[0].strip())
+            else:
+                data[key].append(link.find('a').text.strip())
+        else:
+            if 'Daty' in key:
+                end_date = link.text.partition('\n\n')[2]
+                data[key] = [end_date.partition(' ')[0].strip()]
+            else:
+                data[key] = [link.find('a').text.strip()]
+
+
+def read_next_page(passed_soup):
+    # <div class="nexpage2" style="float:right;">&nbsp;
+    # <a href="/search/status/1/q/%7C%7C%7Cp%B3yta/sort/relevance_desc/offset/3">następna &raquo;</a>
+    # </div>
+    link = passed_soup.find_all(attrs={'class': 'nexpage2', 'style': 'float:right;'})
+    if 0 == len(link):
+        return ''
+    else:
+        return link[0].find('a').get('href')
+
+
+def print_data():
+    # Zamawiający
+    # Daty: publikacji / zakończenia
+    # Przedmiot zamówienia
+    # Kategoria
+    # Miasto
+    for item in data:
+        for pos in range(len(data)):
+            print('Daty   :' + item['Daty: publikacji / zakończenia'][pos])
+            print('Przed  :' + item['Przedmiot zamówienia'][pos])
+            print('Zam    :' + item['Zamawiający'][pos])
+            print('Miasto :' + item['Miasto'][pos])
+            print('Kat    :' + item['Daty: publikacji / zakończenia'][pos])
+
+
+search_phrase = ''
 if len(sys.argv) >= 2:
     for i in range(1, len(sys.argv)):
-        srch += sys.argv[i] + ' '
-    srch = srch[:-1]
+        search_phrase += sys.argv[i] + ' '
+    search_phrase = search_phrase[:-1]
 else:
-    srch = input("What do you look for? ")
+    search_phrase = input("What do you look for? ")
 
-quest = re.sub('\s', '+', srch)
-print(quest)
-url = 'http://www.przetargi.egospodarka.pl/search.php?submitted=1&phrase=' + quest
+main_url = 'http://www.przetargi.egospodarka.pl'
+url = main_url + '/search.php'
 
-headers = {}
-headers['User-Agent'] = \
-    "Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.17 (KHTML, like Gecko) Chrome/24.0.1312.27 Safari/537.17"
+headers = {'User-Agent':
+           "Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.17 (KHTML, like Gecko) Chrome/24.0.1312.27 Safari/537.17"}
+values = {'phrase': search_phrase.encode(encoding='iso-8859-2'),
+          'submitted': '1'}
 
-req = Request(url, headers=headers)
-resp = urlopen(req)
-resp_data = resp.read()
-
+req = requests.get(url, params=values, headers=headers)
+resp_data = req.content
 soup = BeautifulSoup(resp_data, "lxml")
-data = {}
-for link in soup.find_all('td'):
-    key = link.get('data-th')
-    if key in data:
-        if 'Daty' in key:
-            end_date = link.text.partition('\n\n')[2]
-            data[key].append(end_date.partition(' ')[0])
-        else:
-            data[key].append(link.find('a').text)
+
+while True:
+    read_page(soup)
+    url = read_next_page(soup)
+    if url == '':
+        break
     else:
-        if 'Daty' in key:
-            end_date = link.text.partition('\n\n')[2]
-            data[key] = [end_date.partition(' ')[0]]
-        else:
-            data[key] = [link.find('a').text]
+        print(main_url+url)
+        req = requests.get(main_url+url, headers=headers)
+        resp_data = req.content
+        soup = BeautifulSoup(resp_data, "lxml")
 
 print(data)
+print(len(data))
+print_data()
 
