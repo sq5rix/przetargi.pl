@@ -41,13 +41,13 @@ def print_data():
     # Przedmiot zamówienia
     # Kategoria
     # Miasto
-    for item in data:
-        for pos in range(len(data)):
-            print('Daty   :' + item['Daty: publikacji / zakończenia'][pos])
-            print('Przed  :' + item['Przedmiot zamówienia'][pos])
-            print('Zam    :' + item['Zamawiający'][pos])
-            print('Miasto :' + item['Miasto'][pos])
-            print('Kat    :' + item['Daty: publikacji / zakończenia'][pos])
+    for pos in range(0, len(data)-1):
+        print('Daty   :' + data['Daty: publikacji / zakończenia'][pos])
+        print('Przed  :' + data['Przedmiot zamówienia'][pos])
+        print('Zam    :' + data['Zamawiający'][pos])
+        print('Miasto :' + data['Miasto'][pos])
+        print('Kat    :' + data['Daty: publikacji / zakończenia'][pos])
+        print(' ')
 
 
 search_phrase = ''
@@ -81,7 +81,5 @@ while True:
         resp_data = req.content
         soup = BeautifulSoup(resp_data, "lxml")
 
-print(data)
-print(len(data))
 print_data()
 
