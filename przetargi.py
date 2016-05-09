@@ -14,12 +14,16 @@ def read_page(soup_one_page):
             if 'Daty' in key:
                 end_date = link.text.partition('\n\n')[2]
                 data[key].append(end_date.partition(' ')[0].strip())
+            elif 'Przedmiot zamówienia' == key:
+                data[key].append(link.find('a').get('href'))
             else:
                 data[key].append(link.find('a').text.strip())
         else:
             if 'Daty' in key:
                 end_date = link.text.partition('\n\n')[2]
                 data[key] = [end_date.partition(' ')[0].strip()]
+            elif 'Przedmiot zamówienia' == key:
+                data[key] = [link.find('a').get('href')]
             else:
                 data[key] = [link.find('a').text.strip()]
 
@@ -35,7 +39,7 @@ def read_next_page(passed_soup):
         return link[0].find('a').get('href')
 
 
-def print_data():
+def print_data(main_url):
     # Zamawiający
     # Daty: publikacji / zakończenia
     # Przedmiot zamówienia
@@ -43,7 +47,7 @@ def print_data():
     # Miasto
     for pos in range(0, len(data)-1):
         print('Daty   :' + data['Daty: publikacji / zakończenia'][pos])
-        print('Przed  :' + data['Przedmiot zamówienia'][pos])
+        print('Przed  :' + main_url + data['Przedmiot zamówienia'][pos])
         print('Zam    :' + data['Zamawiający'][pos])
         print('Miasto :' + data['Miasto'][pos])
         print('Kat    :' + data['Daty: publikacji / zakończenia'][pos])
@@ -81,5 +85,5 @@ while True:
         resp_data = req.content
         soup = BeautifulSoup(resp_data, "lxml")
 
-print_data()
+print_data(main_url)
 
