@@ -1,31 +1,27 @@
 import sys
-import re
+from time import sleep
+
 from bs4 import BeautifulSoup
 import requests
-from time import sleep
 
 
 def read_page(soup_one_page):
     for link in soup_one_page.find_all('td'):
         key = link.get('data-th')
-        if key in data:
-            if 'Daty' in key:
-                end_date = link.text.partition('\n\n')[2]
-                data[key].append(end_date.partition(' ')[0].strip())
-            elif 'Przedmiot' in key:
-                data[key].append(link.find('a').get('href'))
-            else:
-                data[key].append(link.find('a').text.strip())
-                print(link.find('a').text.strip())
+        if 'Daty' in key:
+            end_date = link.text.partition('\n\n')[2]
+            data['date'].append(end_date.partition(' ')[0].strip())
+        elif 'Przedmiot' in key:
+            data['item_href'].append(link.find('a').get('href'))
+            data['item'].append(link.find('a').text.strip())
+        elif 'Kategoria' in key:
+            data['category'].append(link.find('a').text.strip())
+        elif 'Miasto' in key:
+            data['city'].append(link.find('a').text.strip())
+        elif 'Zamawiający' in key:
+            data['buyer'].append(link.find('a').text.strip())
         else:
-            if 'Daty' in key:
-                end_date = link.text.partition('\n\n')[2]
-                data[key] = [end_date.partition(' ')[0].strip()]
-            elif 'Przedmiot' in key:
-                data[key] = [link.find('a').get('href')]
-            else:
-                data[key] = [link.find('a').text.strip()]
-                print(link.find('a').text.strip())
+            print('Error: {}'.format(link.find('a').text.strip()))
 
 
 def read_next_page(passed_soup):
@@ -45,16 +41,19 @@ def print_data(main_url):
     # Przedmiot zamówienia
     # Kategoria
     # Miasto
-    for pos in range(0, len(data)-1):
-        print('Daty   :' + data['Daty: publikacji / zakończenia'][pos])
-        print('Przed  :' + main_url + data['Przedmiot zamówienia'][pos])
-        print('Zam    :' + data['Zamawiający'][pos])
-        print('Miasto :' + data['Miasto'][pos])
-        print('Kat    :' + data['Kategoria'][pos])
+
+    for pos in range(0, len(data['buyer'])):
+        print('Zamawia : ' + data['buyer'][pos])
+        print('Miasto  : ' + data['city'][pos])
+        print('Daty    : ' + data['date'][pos])
+        print('Przed   : ' + data['item'][pos])
+        print('Przed   : ' + main_url + data['item_href'][pos])
+        print('Kat     : ' + data['category'][pos])
         print(' ')
 
 
-data = {}
+data = {'date': [], 'item_href': [], 'item': [], 'city': [], 'category': [], 'buyer': []}
+
 search_phrase = ''
 if len(sys.argv) >= 2:
     for i in range(1, len(sys.argv)):
@@ -62,6 +61,7 @@ if len(sys.argv) >= 2:
     search_phrase = search_phrase[:-1]
 else:
     search_phrase = input("What do you look for? ")
+print(' ')
 
 main_url = 'http://www.przetargi.egospodarka.pl'
 url = main_url + '/search.php'
@@ -72,6 +72,8 @@ values = {'phrase': search_phrase.encode(encoding='iso-8859-2'),
           'submitted': '1'}
 
 req = requests.get(url, params=values, headers=headers)
+print(req.url)
+print(' ')
 resp_data = req.content
 soup = BeautifulSoup(resp_data, "lxml")
 
@@ -81,7 +83,6 @@ while True:
     if url == '':
         break
     else:
-        print(main_url+url)
         sleep(1.)
         req = requests.get(main_url+url, headers=headers)
         resp_data = req.content
