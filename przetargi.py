@@ -2,9 +2,7 @@ import sys
 import re
 from bs4 import BeautifulSoup
 import requests
-
-global data
-data = {}
+from time import sleep
 
 
 def read_page(soup_one_page):
@@ -14,18 +12,20 @@ def read_page(soup_one_page):
             if 'Daty' in key:
                 end_date = link.text.partition('\n\n')[2]
                 data[key].append(end_date.partition(' ')[0].strip())
-            elif 'Przedmiot zamówienia' == key:
+            elif 'Przedmiot' in key:
                 data[key].append(link.find('a').get('href'))
             else:
                 data[key].append(link.find('a').text.strip())
+                print(link.find('a').text.strip())
         else:
             if 'Daty' in key:
                 end_date = link.text.partition('\n\n')[2]
                 data[key] = [end_date.partition(' ')[0].strip()]
-            elif 'Przedmiot zamówienia' == key:
+            elif 'Przedmiot' in key:
                 data[key] = [link.find('a').get('href')]
             else:
                 data[key] = [link.find('a').text.strip()]
+                print(link.find('a').text.strip())
 
 
 def read_next_page(passed_soup):
@@ -50,10 +50,11 @@ def print_data(main_url):
         print('Przed  :' + main_url + data['Przedmiot zamówienia'][pos])
         print('Zam    :' + data['Zamawiający'][pos])
         print('Miasto :' + data['Miasto'][pos])
-        print('Kat    :' + data['Daty: publikacji / zakończenia'][pos])
+        print('Kat    :' + data['Kategoria'][pos])
         print(' ')
 
 
+data = {}
 search_phrase = ''
 if len(sys.argv) >= 2:
     for i in range(1, len(sys.argv)):
@@ -81,9 +82,11 @@ while True:
         break
     else:
         print(main_url+url)
+        sleep(1.)
         req = requests.get(main_url+url, headers=headers)
         resp_data = req.content
         soup = BeautifulSoup(resp_data, "lxml")
 
 print_data(main_url)
+
 
